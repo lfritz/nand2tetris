@@ -28,7 +28,7 @@ func main() {
 
 	// figure out input and output file names
 	if !strings.HasSuffix(inPath, ".asm") {
-		errorAndExit("error: input file must have end in .asm")
+		errorAndExit("error: input filename must end in .asm")
 	}
 	outPath := strings.TrimSuffix(inPath, ".asm") + ".hack"
 
