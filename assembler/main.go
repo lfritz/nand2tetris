@@ -33,8 +33,9 @@ func main() {
 	outPath := strings.TrimSuffix(inPath, ".asm") + ".hack"
 
 	// read input file
-	input, err := os.ReadFile(inPath)
+	inFile, err := os.Open(inPath)
 	check(err)
+	defer inFile.Close()
 
 	// open output file
 	outFile, err := os.Create(outPath)
@@ -42,7 +43,7 @@ func main() {
 	defer outFile.Close()
 
 	// run the assembler
-	err = internal.Run(input, outFile)
+	err = internal.Run(inFile, outFile)
 	check(err)
 }
 

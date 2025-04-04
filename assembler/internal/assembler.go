@@ -4,17 +4,21 @@ import "io"
 
 // Run runs the assembler. It parses the Hack assembly code in source, translates it to Hack binary
 // code, and writes the result to w.
-func Run(source []byte, w io.Writer) error {
+func Run(r io.ReadSeeker, w io.Writer) error {
 	// The assembler is a two-pass assembler:
 
 	// The first pass creates a symbol table.
-	symbolTable, err := createSymbolTable(source)
+	symbolTable, err := createSymbolTable(r)
 	if err != nil {
 		return err
 	}
 
 	// The second pass translate assembly to binary code.
-	err = translate(source, w, symbolTable)
+	_, err = r.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
+	err = translate(r, w, symbolTable)
 	if err != nil {
 		return err
 	}
@@ -50,10 +54,10 @@ func predefinedSymbols() map[string]uint {
 	}
 }
 
-func createSymbolTable(source []byte) (map[string]uint, error) {
+func createSymbolTable(r io.Reader) (map[string]uint, error) {
 	symbolTable := predefinedSymbols()
 	var address uint
-	p := NewParser(source)
+	p := NewParser(r)
 	for p.Scan() {
 		switch p.InstructionType() {
 		case TypeADecimal, TypeASymbolic, TypeC:
@@ -69,8 +73,8 @@ func createSymbolTable(source []byte) (map[string]uint, error) {
 	return symbolTable, nil
 }
 
-func translate(source []byte, w io.Writer, symbolTable map[string]uint) error {
-	p := NewParser(source)
+func translate(r io.Reader, w io.Writer, symbolTable map[string]uint) error {
+	p := NewParser(r)
 	hackWriter := NewHackWriter(w)
 
 	var nextAddress uint = 16

@@ -2,8 +2,8 @@ package internal
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"unicode"
@@ -11,7 +11,6 @@ import (
 
 // Parser implements a parser for Hack assembly code.
 type Parser struct {
-	buf     *bytes.Buffer
 	scanner *bufio.Scanner
 	current []rune
 }
@@ -20,11 +19,9 @@ type Parser struct {
 //
 // To use the Parser, call Scan to get the next line, then InstructionType to get the type of the
 // current instruction, then the method for that type to get the actual instruction.
-func NewParser(source []byte) *Parser {
-	buf := bytes.NewBuffer(source)
+func NewParser(r io.Reader) *Parser {
 	p := Parser{
-		buf:     buf,
-		scanner: bufio.NewScanner(buf),
+		scanner: bufio.NewScanner(r),
 	}
 	return &p
 }

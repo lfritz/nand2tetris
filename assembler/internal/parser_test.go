@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestParser(t *testing.T) {
 		// a C-instruction
 		M=1
 	`
-	parser := NewParser([]byte(input))
+	parser := NewParser(strings.NewReader(input))
 
 	{
 		if !parser.Scan() {

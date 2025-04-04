@@ -1,12 +1,13 @@
 package internal
 
 import (
+	"io"
 	"reflect"
 	"strings"
 	"testing"
 )
 
-func sampleProgram() []byte {
+func sampleProgram() io.Reader {
 	source := `
 		(first)
 		M=1
@@ -16,7 +17,7 @@ func sampleProgram() []byte {
 		@first
 		@anothervariable
 	`
-	return []byte(source)
+	return strings.NewReader(source)
 }
 
 func TestCreateSymbolTable(t *testing.T) {
