@@ -79,7 +79,7 @@ func TestValidSymbol(t *testing.T) {
 		"_123.$:",
 	}
 	for _, c := range cases {
-		if !validSymbol([]rune(c)) {
+		if !validSymbol(c) {
 			t.Errorf("validSymbol(%q) returned false, want true", c)
 		}
 	}
@@ -91,7 +91,7 @@ func TestValidSymbol(t *testing.T) {
 		"hello!",
 	}
 	for _, c := range cases {
-		if validSymbol([]rune(c)) {
+		if validSymbol(c) {
 			t.Errorf("validSymbol(%q) returned true, want false", c)
 		}
 	}
@@ -106,7 +106,7 @@ func TestParseSymbolicAInstruction(t *testing.T) {
 		{"@.$1", SymbolicAInstruction{".$1"}},
 	}
 	for _, c := range cases {
-		got, err := parseSymbolicAInstruction([]rune(c.line))
+		got, err := parseSymbolicAInstruction(c.line)
 		if err != nil {
 			t.Errorf("parseSymbolicAInstruction(%q) returned error: %v", c.line, err)
 			continue
@@ -132,7 +132,7 @@ func TestParseCInstruction(t *testing.T) {
 		{"AD=D&A;JEQ", CInstruction{"AD", "D&A", "JEQ"}},
 	}
 	for _, c := range cases {
-		got, err := parseCInstruction([]rune(c.line))
+		got, err := parseCInstruction(c.line)
 		if err != nil {
 			t.Errorf("parseCInstruction(%q) returned error: %v", c.line, err)
 			continue
@@ -152,7 +152,7 @@ func TestParseLInstruction(t *testing.T) {
 		{"($123_ABC.def:)", LInstruction{"$123_ABC.def:"}},
 	}
 	for _, c := range cases {
-		got, err := parseLInstruction([]rune(c.line))
+		got, err := parseLInstruction(c.line)
 		if err != nil {
 			t.Errorf("parseLInstruction(%q) returned error: %v", c.line, err)
 			continue

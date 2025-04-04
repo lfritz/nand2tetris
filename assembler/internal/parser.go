@@ -12,7 +12,7 @@ import (
 // Parser implements a parser for Hack assembly code.
 type Parser struct {
 	scanner *bufio.Scanner
-	current []rune
+	current string
 }
 
 // NewParser creates a new parser given the contents of a Hack assembly file.
@@ -35,7 +35,7 @@ func (p *Parser) Scan() bool {
 		if len(line) == 0 || strings.HasPrefix(line, "//") {
 			continue
 		}
-		p.current = []rune(line)
+		p.current = line
 		return true
 	}
 	return false
@@ -71,23 +71,21 @@ func (p *Parser) LInstruction() (LInstruction, error) {
 	return parseLInstruction(p.current)
 }
 
-func instructionType(line []rune) InstructionType {
-	if len(line) > 0 {
-		switch line[0] {
-		case '@':
-			if validSymbol(line[1:]) {
-				return TypeASymbolic
-			} else {
-				return TypeADecimal
-			}
-		case '(':
-			return TypeL
+func instructionType(line string) InstructionType {
+	if remaining, ok := strings.CutPrefix(line, "@"); ok {
+		if validSymbol(remaining) {
+			return TypeASymbolic
+		} else {
+			return TypeADecimal
 		}
+	}
+	if strings.HasPrefix(line, "(") {
+		return TypeL
 	}
 	return TypeC
 }
 
-func validSymbol(symbol []rune) bool {
+func validSymbol(symbol string) bool {
 	if len(symbol) == 0 {
 		return false
 	}
@@ -106,26 +104,28 @@ func validSymbol(symbol []rune) bool {
 	return true
 }
 
-func parseSymbolicAInstruction(line []rune) (instruction SymbolicAInstruction, err error) {
-	if !(len(line) > 1 && line[0] == '@') {
-		err = fmt.Errorf("invalid A-instruction: '%s'", string(line))
+func parseSymbolicAInstruction(line string) (instruction SymbolicAInstruction, err error) {
+	symbol, ok := strings.CutPrefix(line, "@")
+	if !ok {
+		err = fmt.Errorf("invalid A-instruction: '%s'", line)
 		return
 	}
 	instruction = SymbolicAInstruction{
-		Symbol: string(line[1:]),
+		Symbol: symbol,
 	}
 	return
 }
 
-func parseDecimalAInstruction(line []rune) (instruction DecimalAInstruction, err error) {
-	if !(len(line) > 1 && line[0] == '@') {
-		err = fmt.Errorf("invalid A-instruction: '%s'", string(line))
+func parseDecimalAInstruction(line string) (instruction DecimalAInstruction, err error) {
+	number, ok := strings.CutPrefix(line, "@")
+	if !ok {
+		err = fmt.Errorf("invalid A-instruction: '%s'", line)
 		return
 	}
 	var value uint64
-	value, err = strconv.ParseUint(string(line[1:]), 10, 15)
+	value, err = strconv.ParseUint(number, 10, 15)
 	if err != nil {
-		err = fmt.Errorf("invalid A-instruction: '%s'", string(line))
+		err = fmt.Errorf("invalid A-instruction: '%s'", line)
 		return
 	}
 	instruction = DecimalAInstruction{
@@ -134,9 +134,9 @@ func parseDecimalAInstruction(line []rune) (instruction DecimalAInstruction, err
 	return
 }
 
-func parseCInstruction(line []rune) (CInstruction, error) {
+func parseCInstruction(line string) (CInstruction, error) {
 	var dest string
-	remaining := string(line)
+	remaining := line
 	if before, after, ok := strings.Cut(remaining, "="); ok {
 		dest = before
 		remaining = after
@@ -150,13 +150,15 @@ func parseCInstruction(line []rune) (CInstruction, error) {
 	return instruction, nil
 }
 
-func parseLInstruction(line []rune) (LInstruction, error) {
-	if !(len(line) > 2 && line[0] == '(' && line[len(line)-1] == ')') {
-		return LInstruction{}, fmt.Errorf("invalid label declaration: '%s'", string(line))
+func parseLInstruction(line string) (instruction LInstruction, err error) {
+	remaining, ok1 := strings.CutPrefix(line, "(")
+	symbol, ok2 := strings.CutSuffix(remaining, ")")
+	if !(ok1 && ok2) {
+		err = fmt.Errorf("invalid label declaration: '%s'", string(line))
+		return
 	}
-	symbol := string(line[1 : len(line)-1])
-	instruction := LInstruction{
+	instruction = LInstruction{
 		Symbol: symbol,
 	}
-	return instruction, nil
+	return
 }
