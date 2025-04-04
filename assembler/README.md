@@ -9,8 +9,8 @@ and it will create a file `program.hack` that can be loaded into the NAND2Tetris
 
 You can build the assembler binary with
 
-    go build
+    make
 
-and run the tests with
+and run unit tests with
 
-    go test ./...
+    make test
