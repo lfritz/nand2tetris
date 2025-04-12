@@ -14,6 +14,7 @@ import (
 
 	"fmt"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -26,10 +27,11 @@ func main() {
 
 	// figure out input and output file names
 	inPath := args[0]
-	if !strings.HasSuffix(inPath, ".vm") {
+	filename, ok := strings.CutSuffix(inPath, ".vm")
+	if !ok {
 		errorAndExit("error: input filename must end in .vm")
 	}
-	outPath := strings.TrimSuffix(inPath, ".vm") + ".asm"
+	outPath := filename + ".asm"
 
 	// open input file
 	inFile, err := os.Open(inPath)
@@ -42,7 +44,7 @@ func main() {
 	defer outFile.Close()
 
 	// run the translator
-	err = internal.Run(inFile, outFile)
+	err = internal.Run(path.Base(filename), inFile, outFile)
 	check(err)
 }
 
