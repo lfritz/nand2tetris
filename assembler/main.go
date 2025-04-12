@@ -19,20 +19,20 @@ import (
 )
 
 func main() {
-	// parse command-line argument
+	// check command-line argument
 	args := os.Args[1:]
 	if len(args) != 1 {
 		errorAndExit("Usage: assembler input.asm")
 	}
-	inPath := args[0]
 
 	// figure out input and output file names
+	inPath := args[0]
 	if !strings.HasSuffix(inPath, ".asm") {
 		errorAndExit("error: input filename must end in .asm")
 	}
 	outPath := strings.TrimSuffix(inPath, ".asm") + ".hack"
 
-	// read input file
+	// open input file
 	inFile, err := os.Open(inPath)
 	check(err)
 	defer inFile.Close()

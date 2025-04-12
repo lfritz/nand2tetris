@@ -2,7 +2,7 @@ package internal
 
 import "io"
 
-// Run runs the assembler. It parses the Hack assembly code in source, translates it to Hack binary
+// Run runs the assembler. It reads and parses Hack assembly from r, translates it to Hack binary
 // code, and writes the result to w.
 func Run(r io.ReadSeeker, w io.Writer) error {
 	// The assembler is a two-pass assembler:
