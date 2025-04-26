@@ -47,8 +47,8 @@ M=D
 @SP
 M=M+1
 // infinite loop
-@l1
-(l1)
+@filename.l1
+(filename.l1)
 0;JMP
 `
 	reader := strings.NewReader(vmCode)
@@ -183,14 +183,14 @@ func TestTranslate(t *testing.T) {
 			D=M
 			@R13
 			D=D-M
-			@l1
+			@filename.l1
 			D;JEQ
 			D=0
-			@l2
+			@filename.l2
 			0;JMP
-			(l1)
+			(filename.l1)
 			D=-1
-			(l2)
+			(filename.l2)
 			@SP
 			A=M
 			M=D
@@ -204,7 +204,7 @@ func TestTranslate(t *testing.T) {
 		want = strings.ReplaceAll(want, "\t", "")
 		want = want + "\n"
 		var output strings.Builder
-		err := translate("filename", c.command, NewInstructionWriter(&output))
+		err := translate("filename", c.command, NewInstructionWriter(&output, "filename"))
 		if err != nil {
 			t.Errorf("translate for\n%#v\nreturned error: %v", c.command, err)
 			continue

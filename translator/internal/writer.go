@@ -8,12 +8,13 @@ import (
 // An InstructionWriter is used to write Hack assembly language instructions.
 type InstructionWriter struct {
 	io.Writer
+	filename      string
 	labelSequence int
 }
 
 // NewInstructionWriter returns an InstructionWriter that will write to the given writer.
-func NewInstructionWriter(w io.Writer) *InstructionWriter {
-	return &InstructionWriter{w, 0}
+func NewInstructionWriter(w io.Writer, filename string) *InstructionWriter {
+	return &InstructionWriter{w, filename, 0}
 }
 
 // WriteComment writes a comment.
@@ -46,5 +47,5 @@ func (w *InstructionWriter) WriteLabel(label string) {
 // NewLabel returns a label. Each call returns a different one.
 func (w *InstructionWriter) NewLabel() string {
 	w.labelSequence++
-	return fmt.Sprintf("l%d", w.labelSequence)
+	return fmt.Sprintf("%s.l%d", w.filename, w.labelSequence)
 }

@@ -9,7 +9,7 @@ import (
 // Run runs the translator. It reads and parses Hack VM instructions from r, translates them to Hack
 // assembly code, and writes the result to w.
 func Run(filename string, r io.Reader, w io.Writer) error {
-	iw := NewInstructionWriter(w)
+	iw := NewInstructionWriter(w, filename)
 	parser := NewParser(r)
 	for parser.Parse() {
 		err := translate(filename, parser.Command(), iw)

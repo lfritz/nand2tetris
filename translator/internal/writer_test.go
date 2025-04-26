@@ -7,7 +7,7 @@ import (
 
 func TestInstructionWriter(t *testing.T) {
 	var output strings.Builder
-	w := NewInstructionWriter(&output)
+	w := NewInstructionWriter(&output, "test")
 	w.WriteComment("some instructions")
 	w.WriteADecimal(123)
 	w.WriteC("A=M;JMP")
