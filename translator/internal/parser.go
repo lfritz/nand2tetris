@@ -81,6 +81,12 @@ func parseCommand(line string) (*Command, error) {
 		return &Command{Type: PushCommand, Arg1: args[0], Arg2: args[1]}, nil
 	case PopCommand:
 		return &Command{Type: PopCommand, Arg1: args[0], Arg2: args[1]}, nil
+	case LabelCommand:
+		return &Command{Type: LabelCommand, Arg1: args[0]}, nil
+	case GotoCommand:
+		return &Command{Type: GotoCommand, Arg1: args[0]}, nil
+	case IfCommand:
+		return &Command{Type: IfCommand, Arg1: args[0]}, nil
 	}
 	return nil, fmt.Errorf("invalid VM command: %q", line)
 }

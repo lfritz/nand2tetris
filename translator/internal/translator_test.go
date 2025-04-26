@@ -204,7 +204,7 @@ func TestTranslate(t *testing.T) {
 		want = strings.ReplaceAll(want, "\t", "")
 		want = want + "\n"
 		var output strings.Builder
-		err := translate("filename", c.command, NewInstructionWriter(&output, "filename"))
+		err := translate("filename", "f", c.command, NewInstructionWriter(&output, "filename"))
 		if err != nil {
 			t.Errorf("translate for\n%#v\nreturned error: %v", c.command, err)
 			continue

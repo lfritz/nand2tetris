@@ -10,9 +10,10 @@ import (
 // assembly code, and writes the result to w.
 func Run(filename string, r io.Reader, w io.Writer) error {
 	iw := NewInstructionWriter(w, filename)
+	currentFunction := "" // TODO
 	parser := NewParser(r)
 	for parser.Parse() {
-		err := translate(filename, parser.Command(), iw)
+		err := translate(filename, currentFunction, parser.Command(), iw)
 		if err != nil {
 			return err
 		}
@@ -24,7 +25,7 @@ func Run(filename string, r io.Reader, w io.Writer) error {
 	return nil
 }
 
-func translate(filename string, c Command, w *InstructionWriter) error {
+func translate(filename, currentFunction string, c Command, w *InstructionWriter) error {
 	switch c.Type {
 	case PushCommand, PopCommand:
 		segment := c.Arg1
@@ -49,6 +50,15 @@ func translate(filename string, c Command, w *InstructionWriter) error {
 		default:
 			return fmt.Errorf("unexpected arithmetic-logical command: %q", op)
 		}
+	case LabelCommand:
+		translateLabel(filename, currentFunction, c.Arg1, w)
+		return nil
+	case GotoCommand:
+		translateGoto(filename, currentFunction, c.Arg1, w)
+		return nil
+	case IfCommand:
+		translateIf(filename, currentFunction, c.Arg1, w)
+		return nil
 	}
 	return fmt.Errorf("unexpected command type: %v", c.Type)
 }
@@ -183,6 +193,28 @@ func pop(w *InstructionWriter) {
 	w.WriteC("M=M-1")
 	w.WriteC("A=M")
 	w.WriteC("D=M")
+}
+
+func translateLabel(filename, currentFunction, label string, w *InstructionWriter) {
+	w.WriteComment("label %s", label)
+	w.WriteLabel(buildLabel(filename, currentFunction, label))
+}
+
+func translateGoto(filename, currentFunction, label string, w *InstructionWriter) {
+	w.WriteComment("goto %s", label)
+	w.WriteASymbolic(buildLabel(filename, currentFunction, label))
+	w.WriteC("0;JMP")
+}
+
+func translateIf(filename, currentFunction, label string, w *InstructionWriter) {
+	w.WriteComment("if-goto %s", label)
+	pop(w)
+	w.WriteASymbolic(buildLabel(filename, currentFunction, label))
+	w.WriteC("D;JNE")
+}
+
+func buildLabel(filename, currentFunction, label string) string {
+	return fmt.Sprintf("%s.%s$%s", filename, currentFunction, label)
 }
 
 func infiniteLoop(w *InstructionWriter) {

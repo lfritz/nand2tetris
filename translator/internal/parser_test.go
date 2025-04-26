@@ -8,11 +8,15 @@ import (
 
 func TestParser(t *testing.T) {
 	input := `
-add  // an arithmetic command
+add          // an arithmetic command
+
+label LOOP   // a label
 
 // push and pop commands
 push temp 0
 pop static 8
+
+if-goto LOOP // a conditional jump
 `
 	parser := NewParser(strings.NewReader(input))
 
@@ -29,7 +33,7 @@ pop static 8
 		t.Fatalf("parser.Parse() returned false after 1 instructions\nerror: %v", parser.Err())
 	}
 	got = parser.Command()
-	want = Command{Type: PushCommand, Arg1: "temp", Arg2: "0"}
+	want = Command{Type: LabelCommand, Arg1: "LOOP"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("parser returned %v, want %v", got, want)
 	}
@@ -38,13 +42,31 @@ pop static 8
 		t.Fatalf("parser.Parse() returned false after 2 instructions\nerror: %v", parser.Err())
 	}
 	got = parser.Command()
+	want = Command{Type: PushCommand, Arg1: "temp", Arg2: "0"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("parser returned %v, want %v", got, want)
+	}
+
+	if !parser.Parse() {
+		t.Fatalf("parser.Parse() returned false after 3 instructions\nerror: %v", parser.Err())
+	}
+	got = parser.Command()
 	want = Command{Type: PopCommand, Arg1: "static", Arg2: "8"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("parser returned %v, want %v", got, want)
 	}
 
+	if !parser.Parse() {
+		t.Fatalf("parser.Parse() returned false after 4 instructions\nerror: %v", parser.Err())
+	}
+	got = parser.Command()
+	want = Command{Type: IfCommand, Arg1: "LOOP"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("parser returned %v, want %v", got, want)
+	}
+
 	if parser.Parse() {
-		t.Error("parser.Parse() returned true after 3 instructions, want false")
+		t.Error("parser.Parse() returned true after 5 instructions, want false")
 	}
 	if err := parser.Err(); err != nil {
 		t.Errorf("parser.Err() returned %v", err)
