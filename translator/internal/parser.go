@@ -56,7 +56,9 @@ func (p *Parser) Command() Command {
 }
 
 func parseCommand(line string) (*Command, error) {
-	if line == "" || strings.HasPrefix(line, "//") {
+	line, _, _ = strings.Cut(line, "//")
+	line = strings.TrimSpace(line)
+	if line == "" {
 		return nil, nil
 	}
 	parts := strings.Split(line, " ")

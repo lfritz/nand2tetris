@@ -8,8 +8,7 @@ import (
 
 func TestParser(t *testing.T) {
 	input := `
-// an arithmetic command
-add
+add  // an arithmetic command
 
 // push and pop commands
 push temp 0
@@ -18,7 +17,7 @@ pop static 8
 	parser := NewParser(strings.NewReader(input))
 
 	if !parser.Parse() {
-		t.Fatal("parser.Parse() returned false after 0 instructions, want true")
+		t.Fatalf("parser.Parse() returned false after 0 instructions\nerror: %v", parser.Err())
 	}
 	got := parser.Command()
 	want := Command{Type: ArithmeticCommand, Arg1: "add"}
@@ -27,7 +26,7 @@ pop static 8
 	}
 
 	if !parser.Parse() {
-		t.Fatal("parser.Parse() returned false after 1 instructions, want true")
+		t.Fatalf("parser.Parse() returned false after 1 instructions\nerror: %v", parser.Err())
 	}
 	got = parser.Command()
 	want = Command{Type: PushCommand, Arg1: "temp", Arg2: "0"}
@@ -36,7 +35,7 @@ pop static 8
 	}
 
 	if !parser.Parse() {
-		t.Fatal("parser.Parse() returned false after 2 instructions, want true")
+		t.Fatalf("parser.Parse() returned false after 2 instructions\nerror: %v", parser.Err())
 	}
 	got = parser.Command()
 	want = Command{Type: PopCommand, Arg1: "static", Arg2: "8"}
