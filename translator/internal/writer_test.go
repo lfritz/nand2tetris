@@ -11,6 +11,7 @@ func TestInstructionWriter(t *testing.T) {
 	w.WriteComment("some instructions")
 	w.WriteADecimal(123)
 	w.WriteC("A=M;JMP")
+	w.WriteBlank()
 	w.WriteASymbolic("foo")
 	w.WriteC("AM=M-1")
 	w.WriteC("D;JLE")
@@ -19,6 +20,7 @@ func TestInstructionWriter(t *testing.T) {
 	want := `// some instructions
 @123
 A=M;JMP
+
 @foo
 AM=M-1
 D;JLE

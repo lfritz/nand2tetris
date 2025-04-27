@@ -17,6 +17,11 @@ func NewInstructionWriter(w io.Writer, filename string) *InstructionWriter {
 	return &InstructionWriter{w, filename, 0}
 }
 
+// WriteBlank writes a blank line.
+func (w *InstructionWriter) WriteBlank() {
+	fmt.Fprintln(w)
+}
+
 // WriteComment writes a comment.
 func (w *InstructionWriter) WriteComment(format string, a ...any) {
 	fmt.Fprint(w, "// ")

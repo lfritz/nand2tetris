@@ -58,6 +58,10 @@ func (c CommandType) arity() int {
 		return 1
 	case IfCommand:
 		return 1
+	case FunctionCommand:
+		return 2
+	case ReturnCommand:
+		return 0
 	}
 	return 0
 }
@@ -76,6 +80,10 @@ func commandType(name string) CommandType {
 		return GotoCommand
 	case "if-goto":
 		return IfCommand
+	case "function":
+		return FunctionCommand
+	case "return":
+		return ReturnCommand
 	}
 	return InvalidCommand
 }

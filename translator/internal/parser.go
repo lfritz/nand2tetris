@@ -74,19 +74,28 @@ func parseCommand(line string) (*Command, error) {
 	if t.arity() != len(args) {
 		return nil, fmt.Errorf("invalid VM command (expected %d arguments): %q", t.arity(), line)
 	}
+	cmd := &Command{Type: t}
 	switch t {
 	case ArithmeticCommand:
-		return &Command{Type: ArithmeticCommand, Arg1: name}, nil
+		cmd.Arg1 = name
 	case PushCommand:
-		return &Command{Type: PushCommand, Arg1: args[0], Arg2: args[1]}, nil
+		cmd.Arg1 = args[0]
+		cmd.Arg2 = args[1]
 	case PopCommand:
-		return &Command{Type: PopCommand, Arg1: args[0], Arg2: args[1]}, nil
+		cmd.Arg1 = args[0]
+		cmd.Arg2 = args[1]
 	case LabelCommand:
-		return &Command{Type: LabelCommand, Arg1: args[0]}, nil
+		cmd.Arg1 = args[0]
 	case GotoCommand:
-		return &Command{Type: GotoCommand, Arg1: args[0]}, nil
+		cmd.Arg1 = args[0]
 	case IfCommand:
-		return &Command{Type: IfCommand, Arg1: args[0]}, nil
+		cmd.Arg1 = args[0]
+	case FunctionCommand:
+		cmd.Arg1 = args[0]
+		cmd.Arg2 = args[1]
+	case ReturnCommand:
+	default:
+		return nil, fmt.Errorf("invalid VM command: %q", line)
 	}
-	return nil, fmt.Errorf("invalid VM command: %q", line)
+	return cmd, nil
 }
