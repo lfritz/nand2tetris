@@ -6,3 +6,4 @@ So far I have:
 
  * [assembler](assembler): assembler for the Hack assembly language from chapter 6.
  * [translator](translator): translator for the Hack VM language from chapters 7 and 8.
+ * [arkanoid](arkanoid): Arkanoid game implemented in Jack for chapter 9.

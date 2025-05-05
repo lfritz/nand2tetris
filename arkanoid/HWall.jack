@@ -1,0 +1,14 @@
+class HWall {
+	field int y;
+
+	constructor HWall new(int initialY) {
+		let y = initialY;
+		return this;
+	}
+
+	method void draw(boolean color) {
+		do Screen.setColor(color);
+		do Screen.drawRectangle(0, y, 511, y);
+		return;
+	}
+}

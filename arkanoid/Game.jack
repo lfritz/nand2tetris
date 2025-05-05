@@ -1,0 +1,78 @@
+class Game {
+	field Paddle paddle;
+	field Ball ball;
+	field HWall ceiling;
+	field VWall leftWall, rightWall;
+	field int nBlocks;
+	field Array blocks;
+
+	constructor Game new() {
+		var int paddleWidth, paddleHeight, paddleGap, paddleX, paddleY, paddleSpeed;
+		var int ballX, ballY, ballR, ballDx, ballDy;
+		var int blockWidth, blockHeight, blockRows, blockCols, blockOffsetX, blockOffsetY;
+		var int row, col;
+
+		let paddleWidth = 60;
+		let paddleHeight = 10;
+		let paddleGap = 2;
+		let paddleX = (512 - paddleWidth) / 2;
+		let paddleY = 256 - paddleGap - paddleHeight;
+		let paddleSpeed = 10;
+		let paddle = Paddle.new(paddleX, paddleY, paddleWidth, paddleHeight, paddleSpeed);
+
+		let ballR = 5;
+		let ballX = 512 / 2;
+		let ballY = paddleY - ballR - 1;
+		let ballDx = 1;
+		let ballDy = -1;
+		let ball = Ball.new(ballX, ballY, ballR, ballDx, ballDy);
+
+		let ceiling = HWall.new(0);
+		let leftWall = VWall.new(0);
+		let rightWall = VWall.new(511);
+
+		let blockWidth = 40;
+		let blockHeight = 10;
+		let blockRows = 3;
+		let blockCols = 10;
+		let blockOffsetX = (512 - (blockCols*blockWidth)) / 2;
+		let blockOffsetY = 80;
+		let nBlocks = blockRows * blockCols;
+		let blocks = Array.new(nBlocks);
+		let row = 0;
+		while (row < blockRows) {
+			let col = 0;
+			while (col < blockCols) {
+				let blocks[(col * blockRows) + row] = Block.new(
+					blockOffsetX + (col * blockWidth) + 1,
+					blockOffsetY + (row * blockHeight) + 1,
+					blockWidth - 2,
+					blockHeight - 2,
+					true);
+				let col = col + 1;
+			}
+			let row = row + 1;
+		}
+
+		return this;
+	}
+
+	method void run() {
+		var int i;
+		var Block b;
+
+		do paddle.draw(true);
+		do ball.draw(true);
+		do ceiling.draw(true);
+		do leftWall.draw(true);
+		do rightWall.draw(true);
+
+		let i = 0;
+		while (i < nBlocks) {
+			let b = blocks[i];
+			do b.draw(true);
+			let i = i + 1;
+		}
+		return;
+	}
+}

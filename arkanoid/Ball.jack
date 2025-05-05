@@ -1,0 +1,19 @@
+class Ball {
+	field int x, y, r, dx, dy;
+	field boolean active;
+
+	constructor Ball new(int initialX, int initialY, int initialR, int initialDx, int initialDy) {
+		let x = initialX;
+		let y = initialY;
+		let r = initialR;
+		let dx = initialDx;
+		let dy = initialDy;
+		return this;
+	}
+
+	method void draw(boolean color) {
+		do Screen.setColor(color);
+		do Screen.drawCircle(x, y, r);
+		return;
+	}
+}

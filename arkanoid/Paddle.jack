@@ -1,0 +1,20 @@
+class Paddle {
+	field int x, y, w, h;
+	field int speed;
+
+	constructor Paddle new(int initialX, int initialY, int initialW, int initialH,
+		                   int initialSpeed) {
+		let x = initialX;
+		let y = initialY;
+		let w = initialW;
+		let h = initialH;
+		let speed = initialSpeed;
+		return this;
+	}
+
+	method void draw(boolean color) {
+		do Screen.setColor(color);
+		do Screen.drawRectangle(x, y, x + w, y + h);
+		return;
+	}
+}

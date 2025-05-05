@@ -1,0 +1,14 @@
+class VWall {
+	field int x;
+
+	constructor VWall new(int initialX) {
+		let x = initialX;
+		return this;
+	}
+
+	method void draw(boolean color) {
+		do Screen.setColor(color);
+		do Screen.drawRectangle(x, 0, x, 255);
+		return;
+	}
+}
