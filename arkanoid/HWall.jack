@@ -1,8 +1,10 @@
 class HWall {
 	field int y;
+	field HLine line;
 
 	constructor HWall new(int initialY) {
 		let y = initialY;
+		let line = HLine.new(y);
 		return this;
 	}
 
@@ -10,5 +12,9 @@ class HWall {
 		do Screen.setColor(color);
 		do Screen.drawRectangle(0, y, 511, y);
 		return;
+	}
+
+	method int detectCollision(Ball b) {
+		return line.detectCollision(b);
 	}
 }

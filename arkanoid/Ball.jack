@@ -11,9 +11,35 @@ class Ball {
 		return this;
 	}
 
+	method int getX() { return x; }
+	method int getY() { return y; }
+	method int getR() { return r; }
+
 	method void draw(boolean color) {
 		do Screen.setColor(color);
 		do Screen.drawCircle(x, y, r);
+		return;
+	}
+
+	method void move() {
+		let x = x + dx;
+		let y = y + dy;
+		return;
+	}
+
+	method void unmove() {
+		let x = x - dx;
+		let y = y - dy;
+		return;
+	}
+
+	method void bounce(int collision) {
+		if (collision | 1) {
+			let dx = - dx;
+		}
+		if (collision | 2) {
+			let dy = - dy;
+		}
 		return;
 	}
 }

@@ -5,6 +5,7 @@ class Game {
 	field VWall leftWall, rightWall;
 	field int nBlocks;
 	field Array blocks;
+	field int dt;
 
 	constructor Game new() {
 		var int paddleWidth, paddleHeight, paddleGap, paddleX, paddleY, paddleSpeed;
@@ -54,10 +55,48 @@ class Game {
 			let row = row + 1;
 		}
 
+		let dt = 1;
+
 		return this;
 	}
 
-	method void run() {
+	method void start() {
+		do draw();
+		return;
+	}
+
+	method boolean run() {
+		var int collision;
+		var int key;
+
+		do Sys.wait(dt);
+
+		// TODO move collision detection to separate method
+		do ball.move();
+		let collision = ceiling.detectCollision(ball);
+		do ball.unmove();
+		if (collision = 0) {
+			do ball.draw(false);
+			do ball.move();
+			do ball.draw(true);
+		} else {
+			do ball.bounce(collision);
+		}
+
+		let key = Keyboard.keyPressed();
+		if (key = 140) {
+			return false;
+		}
+		if ((key = 130) | (key = 132)) {
+			do paddle.draw(false);
+			do paddle.move(key = 132);
+			do paddle.draw(true);
+		}
+
+		return true;
+	}
+
+	method void draw() {
 		var int i;
 		var Block b;
 
@@ -73,6 +112,7 @@ class Game {
 			do b.draw(true);
 			let i = i + 1;
 		}
+
 		return;
 	}
 }

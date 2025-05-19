@@ -1,8 +1,13 @@
 class Main {
-    function void main() {
-        var Game game;
-        let game = Game.new();
-        do game.run();
-        return;
-    }
+	function void main() {
+		var Game game;
+		var boolean running;
+		let game = Game.new();
+		do game.start();
+		let running = true;
+		while (running) {
+			let running = game.run();
+		}
+		return;
+	}
 }

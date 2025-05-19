@@ -1,5 +1,6 @@
 class Paddle {
 	field int x, y, w, h;
+	field int maxX;
 	field int speed;
 
 	constructor Paddle new(int initialX, int initialY, int initialW, int initialH,
@@ -8,6 +9,7 @@ class Paddle {
 		let y = initialY;
 		let w = initialW;
 		let h = initialH;
+		let maxX = 512 - w;
 		let speed = initialSpeed;
 		return this;
 	}
@@ -15,6 +17,21 @@ class Paddle {
 	method void draw(boolean color) {
 		do Screen.setColor(color);
 		do Screen.drawRectangle(x, y, x + w, y + h);
+		return;
+	}
+
+	method void move(boolean direction) {
+		if (direction) {
+			let x = x + speed;
+		} else {
+			let x = x - speed;
+		}
+		if (x < 0) {
+			let x = 0;
+		}
+		if (x > maxX) {
+			let x = maxX;
+		}
 		return;
 	}
 }

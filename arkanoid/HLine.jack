@@ -1,0 +1,18 @@
+class HLine {
+	field int y;
+
+	constructor HLine new(int initialY) {
+		let y = initialY;
+		return this;
+	}
+
+	method int detectCollision(Ball b) {
+		var int by, r;
+		let by = b.getY();
+		let r = b.getR();
+		if (((by - r) > y) | (y > (by + r))) {
+			return 0;  // no collision
+		}
+		return 2;  // vertical collision
+	}
+}
