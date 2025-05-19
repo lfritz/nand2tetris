@@ -1,14 +1,15 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"io"
 )
 
 // Compile runs the compiler and writes Hack VM code to w.
 func Compile(filename string, r io.Reader, w io.Writer) error {
-	return errors.New("TODO")
+	engine := NewCompilationEngine(r, w, false)
+	engine.CompileClass()
+	return engine.Err()
 }
 
 // PrintSyntax runs the tokenizer and writes tokens to w.
@@ -38,7 +39,9 @@ func PrintTokens(filename string, r io.Reader, w io.Writer) error {
 
 // PrintSyntax runs the parser and writes a syntax tree to w.
 func PrintSyntax(filename string, r io.Reader, w io.Writer) error {
-	return errors.New("TODO")
+	engine := NewCompilationEngine(r, w, true)
+	engine.CompileClass()
+	return engine.Err()
 }
 
 func symbolToXML(r rune) string {
