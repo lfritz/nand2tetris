@@ -3,7 +3,10 @@
 set -e
 
 compare() {
+    echo "Comparing tokens for $1:"
     diff <(xmllint --format $1) <(xmllint --format $2)
+    echo "OK"
+    echo
 }
 
 make -s

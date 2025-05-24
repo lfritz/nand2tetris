@@ -3,7 +3,11 @@
 set -e
 
 compare() {
-    diff <(xmllint --format $1) <(xmllint --format $2)
+    echo "Comparing syntax for $1:"
+    diff <(cat $1 | sed -e 's/^[ \t]*//' | xmllint --format - ) \
+         <(cat $2 | sed -e 's/^[ \t]*//' | xmllint --format - )
+    echo "OK"
+    echo
 }
 
 make -s
