@@ -624,7 +624,7 @@ func (c *compiler) consumeKeyword(ks ...Keyword) error {
 
 func (c *compiler) consumeSymbol(s rune) error {
 	if c.atEnd || c.t.TokenType() != TokenTypeSymbol || c.t.Symbol() != s {
-		return c.errExpected("symbol “%c”", s)
+		return c.errExpected(fmt.Sprintf("symbol “%c”", s))
 	}
 	c.advance()
 	return nil
@@ -692,8 +692,7 @@ func (c *compiler) gotInteger() (value int, ok bool) {
 	return c.t.IntVal(), true
 }
 
-func (c *compiler) errExpected(format string, a ...any) error {
-	expected := fmt.Sprintf(format, a...)
+func (c *compiler) errExpected(expected string) error {
 	var got string
 	if c.atEnd {
 		got = "end of input"
