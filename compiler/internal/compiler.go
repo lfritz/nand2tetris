@@ -63,17 +63,21 @@ func symbolToXML(r rune) string {
 }
 
 type compiler struct {
-	t         *Tokenizer
-	w         io.Writer
-	printMode bool
-	atEnd     bool
+	t               *Tokenizer
+	w               io.Writer
+	printMode       bool
+	atEnd           bool
+	classTable      *SymbolTable
+	subroutineTable *SymbolTable
 }
 
 func newCompiler(r io.Reader, w io.Writer, printMode bool) *compiler {
 	return &compiler{
-		t:         NewTokenizer(r),
-		w:         w,
-		printMode: printMode,
+		t:               NewTokenizer(r),
+		w:               w,
+		printMode:       printMode,
+		classTable:      NewSymbolTable(),
+		subroutineTable: NewSymbolTable(),
 	}
 }
 
@@ -116,23 +120,29 @@ func (c *compiler) compileClass() error {
 	}
 	c.advance()
 	fmt.Fprintf(c.w, "</class>\n")
+	c.classTable.Reset()
 	return nil
 }
 
 func (c *compiler) compileClassVarDec() error {
 	fmt.Fprintf(c.w, "<classVarDec>\n")
+	kind := SymbolKindField
+	if c.gotKeyword(KeywordStatic) {
+		kind = SymbolKindStatic
+	}
 	if err := c.consumeKeyword(KeywordStatic, KeywordField); err != nil {
 		return err
 	}
-	if err := c.compileType(); err != nil {
+	typ, err := c.compileType()
+	if err != nil {
 		return err
 	}
 	for {
-		varName, err := c.consumeIdentifier()
+		name, err := c.consumeIdentifier()
 		if err != nil {
 			return err
 		}
-		_ = varName
+		c.classTable.Define(name, typ, kind)
 		if c.gotSymbol(',') {
 			c.advance()
 		} else {
@@ -146,17 +156,19 @@ func (c *compiler) compileClassVarDec() error {
 	return nil
 }
 
-func (c *compiler) compileType() error {
-	if c.gotKeyword(KeywordInt, KeywordChar, KeywordBoolean) {
+func (c *compiler) compileType() (string, error) {
+	switch {
+	case c.gotKeyword(KeywordInt):
 		c.advance()
-	} else {
-		typeName, err := c.consumeIdentifier()
-		if err != nil {
-			return err
-		}
-		_ = typeName
+		return "int", nil
+	case c.gotKeyword(KeywordChar):
+		c.advance()
+		return "char", nil
+	case c.gotKeyword(KeywordBoolean):
+		c.advance()
+		return "boolean", nil
 	}
-	return nil
+	return c.consumeIdentifier()
 }
 
 func (c *compiler) compileSubroutine() error {
@@ -167,11 +179,11 @@ func (c *compiler) compileSubroutine() error {
 		return err
 	}
 
-	// keyword void or a type
+	// return type or "void"
 	if c.gotKeyword(KeywordVoid) {
 		c.advance()
 	} else {
-		if err := c.compileType(); err != nil {
+		if _, err := c.compileType(); err != nil {
 			return err
 		}
 	}
@@ -194,6 +206,7 @@ func (c *compiler) compileSubroutine() error {
 	}
 
 	fmt.Fprintf(c.w, "</subroutineDec>\n")
+	c.subroutineTable.Reset()
 	return nil
 }
 
@@ -206,14 +219,17 @@ func (c *compiler) compileParameterList() error {
 		// empty parameter list
 	} else {
 		for {
-			if err := c.compileType(); err != nil {
-				return err
-			}
-			varName, err := c.consumeIdentifier()
+			// TODO define subroutine arguments
+			typ, err := c.compileType()
 			if err != nil {
 				return err
 			}
-			_ = varName
+			argumentName, err := c.consumeIdentifier()
+			if err != nil {
+				return err
+			}
+
+			c.subroutineTable.Define(argumentName, typ, SymbolKindArg)
 			if c.gotSymbol(')') {
 				// reached the end of the parameter list
 				break
@@ -263,7 +279,8 @@ func (c *compiler) compileVarDec() error {
 	if err := c.consumeKeyword(KeywordVar); err != nil {
 		return err
 	}
-	if err := c.compileType(); err != nil {
+	typ, err := c.compileType()
+	if err != nil {
 		return err
 	}
 	for {
@@ -271,7 +288,7 @@ func (c *compiler) compileVarDec() error {
 		if err != nil {
 			return err
 		}
-		_ = varName
+		c.subroutineTable.Define(varName, typ, SymbolKindVar)
 		if c.gotSymbol(',') {
 			c.advance()
 		} else {
