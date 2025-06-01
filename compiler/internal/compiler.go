@@ -81,6 +81,16 @@ func newCompiler(r io.Reader, w io.Writer, printMode bool) *compiler {
 	}
 }
 
+func (c *compiler) lookup(name string) *SymbolTable {
+	if _, ok := c.subroutineTable.symbols[name]; ok {
+		return c.subroutineTable
+	}
+	if _, ok := c.classTable.symbols[name]; ok {
+		return c.classTable
+	}
+	return nil
+}
+
 func (c *compiler) compileFile() error {
 	if !c.printMode {
 		return errors.New("compilation is not yet implemented")
@@ -104,7 +114,7 @@ func (c *compiler) compileClass() error {
 	if err != nil {
 		return err
 	}
-	_ = className
+	c.printIdentifier(className, "class", -1, "declaration")
 	if err := c.consumeSymbol('{'); err != nil {
 		return err
 	}
@@ -127,8 +137,10 @@ func (c *compiler) compileClass() error {
 func (c *compiler) compileClassVarDec() error {
 	fmt.Fprintf(c.w, "<classVarDec>\n")
 	kind := SymbolKindField
+	category := "field"
 	if c.gotKeyword(KeywordStatic) {
 		kind = SymbolKindStatic
+		category = "static"
 	}
 	if err := c.consumeKeyword(KeywordStatic, KeywordField); err != nil {
 		return err
@@ -142,7 +154,8 @@ func (c *compiler) compileClassVarDec() error {
 		if err != nil {
 			return err
 		}
-		c.classTable.Define(name, typ, kind)
+		index := c.classTable.Define(name, typ, kind)
+		c.printIdentifier(name, category, index, "declaration")
 		if c.gotSymbol(',') {
 			c.advance()
 		} else {
@@ -229,7 +242,8 @@ func (c *compiler) compileParameterList() error {
 				return err
 			}
 
-			c.subroutineTable.Define(argumentName, typ, SymbolKindArg)
+			index := c.subroutineTable.Define(argumentName, typ, SymbolKindArg)
+			c.printIdentifier(argumentName, "arg", index, "declaration")
 			if c.gotSymbol(')') {
 				// reached the end of the parameter list
 				break
@@ -288,7 +302,8 @@ func (c *compiler) compileVarDec() error {
 		if err != nil {
 			return err
 		}
-		c.subroutineTable.Define(varName, typ, SymbolKindVar)
+		index := c.subroutineTable.Define(varName, typ, SymbolKindVar)
+		c.printIdentifier(varName, "var", index, "declaration")
 		if c.gotSymbol(',') {
 			c.advance()
 		} else {
@@ -331,7 +346,7 @@ func (c *compiler) compileLetStatement() error {
 	if err != nil {
 		return err
 	}
-	_ = varName
+	c.printIdentifierUse(varName)
 
 	// optional [...]
 	if c.gotSymbol('[') {
@@ -553,6 +568,7 @@ func (c *compiler) compileTerm() error {
 		c.advance()
 		if c.gotSymbol('[') {
 			// array indexing
+			c.printIdentifierUse(identifier)
 			c.advance()
 			if err := c.compileExpression(); err != nil {
 				return err
@@ -566,6 +582,7 @@ func (c *compiler) compileTerm() error {
 			}
 		} else {
 			// just a variable
+			c.printIdentifierUse(identifier)
 		}
 	} else {
 		return c.errExpected("term")
@@ -576,13 +593,16 @@ func (c *compiler) compileTerm() error {
 }
 
 func (c *compiler) compileSubroutineCall(identifier string) error {
-	_ = identifier
 	if c.gotSymbol('.') {
+		c.printIdentifier(identifier, "class", -1, "use")
 		c.advance()
-		_, err := c.consumeIdentifier()
+		subroutineName, err := c.consumeIdentifier()
 		if err != nil {
 			return err
 		}
+		c.printIdentifier(subroutineName, "subroutine", -1, "use")
+	} else {
+		c.printIdentifier(identifier, "subroutine", -1, "use")
 	}
 	if err := c.compileExpressionList(); err != nil {
 		return err
@@ -614,8 +634,56 @@ func (c *compiler) compileExpressionList() error {
 	return nil
 }
 
+func (c *compiler) printIdentifierUse(name string) {
+	table := c.lookup(name)
+	kind := table.KindOf(name)
+	index := table.IndexOf(name)
+
+	var category string
+	switch kind {
+	case SymbolKindStatic:
+		category = "static"
+	case SymbolKindField:
+		category = "field"
+	case SymbolKindArg:
+		category = "arg"
+	case SymbolKindVar:
+		category = "var"
+	}
+
+	fmt.Fprintf(c.w, "<identifier>\n")
+	fmt.Fprintf(c.w, "<name> %s </name>\n", name)
+	fmt.Fprintf(c.w, "<category> %s </category>\n", category)
+	fmt.Fprintf(c.w, "<index> %d </index>\n", index)
+	fmt.Fprintf(c.w, "<usage> use </usage>\n")
+	fmt.Fprintf(c.w, "</identifier>\n")
+}
+
+func (c *compiler) printIdentifier(name, category string, index int, usage string) {
+	fmt.Fprintf(c.w, "<identifier>\n")
+	fmt.Fprintf(c.w, "<name> %s </name>\n", name)
+	fmt.Fprintf(c.w, "<category> %s </category>\n", category)
+	if index >= 0 {
+		fmt.Fprintf(c.w, "<index> %d </index>\n", index)
+	}
+	fmt.Fprintf(c.w, "<usage> %s </usage>\n", usage)
+	fmt.Fprintf(c.w, "</identifier>\n")
+}
+
 func (c *compiler) advance() {
-	printToken(c.w, c.t)
+	switch c.t.TokenType() {
+	case TokenTypeKeyword:
+		fmt.Fprintf(c.w, "<keyword> %s </keyword>\n", c.t.Keyword().String())
+	case TokenTypeSymbol:
+		fmt.Fprintf(c.w, "<symbol> %s </symbol>\n", symbolToXML(c.t.Symbol()))
+	case TokenTypeIdentifier:
+		// identifiers are printed with printIdentifier and printIdentifierUse
+	case TokenTypeIntConst:
+		fmt.Fprintf(c.w, "<integerConstant> %d </integerConstant>\n", c.t.IntVal())
+	case TokenTypeStringConst:
+		fmt.Fprintf(c.w, "<stringConstant> %s </stringConstant>\n", c.t.StringVal())
+	}
+
 	c.atEnd = !c.t.Tokenize()
 }
 

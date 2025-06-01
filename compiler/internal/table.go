@@ -36,7 +36,7 @@ func (t *SymbolTable) Reset() {
 	}
 }
 
-func (t *SymbolTable) Define(name, typ string, kind SymbolKind) {
+func (t *SymbolTable) Define(name, typ string, kind SymbolKind) int {
 	index := t.count[kind]
 	t.count[kind] += 1
 	t.symbols[name] = symbol{
@@ -45,6 +45,7 @@ func (t *SymbolTable) Define(name, typ string, kind SymbolKind) {
 		kind:  kind,
 		index: index,
 	}
+	return index
 }
 
 func (t *SymbolTable) VarCount(kind SymbolKind) int {
