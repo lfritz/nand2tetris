@@ -12,19 +12,19 @@ compare() {
 
 make -s
 
-./compiler -s testdata/ArrayTest/Main.jack
-compare testdata/ArrayTest/Main{,Syntax}.xml
+./compiler -s test-parser/ArrayTest/Main.jack
+compare test-parser/ArrayTest/Main{,Syntax}.xml
 
-./compiler -s testdata/ExpressionLessSquare
-for f in $(ls testdata/ExpressionLessSquare/*.jack)
+./compiler -s test-parser/ExpressionLessSquare
+for f in $(ls test-parser/ExpressionLessSquare/*.jack)
 do
     name=$(basename -s .jack $f)
-    compare testdata/ExpressionLessSquare/${name}{,Syntax}.xml
+    compare test-parser/ExpressionLessSquare/${name}{,Syntax}.xml
 done
 
-./compiler -s testdata/Square
-for f in $(ls testdata/Square/*.jack)
+./compiler -s test-parser/Square
+for f in $(ls test-parser/Square/*.jack)
 do
     name=$(basename -s .jack $f)
-    compare testdata/Square/${name}{,Syntax}.xml
+    compare test-parser/Square/${name}{,Syntax}.xml
 done

@@ -5,32 +5,32 @@ import "testing"
 func fillTable(t *testing.T, table *SymbolTable) {
 	t.Helper()
 
-	table.Define("aaa", "string", IdentifierKindField)
-	table.Define("bbb", "boolean", IdentifierKindField)
-	table.Define("ccc", "string", IdentifierKindField)
+	table.Define("aaa", "string", SymbolKindField)
+	table.Define("bbb", "boolean", SymbolKindField)
+	table.Define("ccc", "string", SymbolKindField)
 
-	table.Define("ddd", "int", IdentifierKindStatic)
+	table.Define("ddd", "int", SymbolKindStatic)
 
-	table.Define("eee", "string", IdentifierKindArg)
-	table.Define("fff", "boolean", IdentifierKindArg)
+	table.Define("eee", "string", SymbolKindArg)
+	table.Define("fff", "boolean", SymbolKindArg)
 
-	table.Define("ggg", "string", IdentifierKindVar)
-	table.Define("hhh", "string", IdentifierKindVar)
-	table.Define("iii", "boolean", IdentifierKindVar)
-	table.Define("jjj", "int", IdentifierKindVar)
+	table.Define("ggg", "string", SymbolKindVar)
+	table.Define("hhh", "string", SymbolKindVar)
+	table.Define("iii", "boolean", SymbolKindVar)
+	table.Define("jjj", "int", SymbolKindVar)
 }
 
 func TestSymbolTableVarCount(t *testing.T) {
 	table := NewSymbolTable()
 	fillTable(t, table)
 	cases := []struct {
-		kind IdentifierKind
+		kind SymbolKind
 		want int
 	}{
-		{IdentifierKindField, 3},
-		{IdentifierKindStatic, 1},
-		{IdentifierKindArg, 2},
-		{IdentifierKindVar, 4},
+		{SymbolKindField, 3},
+		{SymbolKindStatic, 1},
+		{SymbolKindArg, 2},
+		{SymbolKindVar, 4},
 	}
 	for _, c := range cases {
 		got := table.VarCount(c.kind)
@@ -45,7 +45,7 @@ func TestSymbolTableKindOf(t *testing.T) {
 	fillTable(t, table)
 	name := "eee"
 	got := table.KindOf(name)
-	want := IdentifierKindArg
+	want := SymbolKindArg
 	if got != want {
 		t.Errorf("table.KindOf(%q) == %v, want %v", name, got, want)
 	}
