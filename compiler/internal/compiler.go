@@ -64,7 +64,8 @@ func symbolToXML(r rune) string {
 
 type compiler struct {
 	t               *Tokenizer
-	w               io.Writer
+	syntaxWriter    io.Writer
+	vmWriter        *VMWriter
 	printMode       bool
 	atEnd           bool
 	classTable      *SymbolTable
@@ -74,11 +75,19 @@ type compiler struct {
 func newCompiler(r io.Reader, w io.Writer, printMode bool) *compiler {
 	return &compiler{
 		t:               NewTokenizer(r),
-		w:               w,
+		syntaxWriter:    discardWriter(w, !printMode),
+		vmWriter:        NewVMWriter(discardWriter(w, printMode)),
 		printMode:       printMode,
 		classTable:      NewSymbolTable(),
 		subroutineTable: NewSymbolTable(),
 	}
+}
+
+func discardWriter(w io.Writer, discard bool) io.Writer {
+	if discard {
+		return io.Discard
+	}
+	return w
 }
 
 func (c *compiler) lookup(name string) *SymbolTable {
@@ -92,9 +101,6 @@ func (c *compiler) lookup(name string) *SymbolTable {
 }
 
 func (c *compiler) compileFile() error {
-	if !c.printMode {
-		return errors.New("compilation is not yet implemented")
-	}
 	c.atEnd = !c.t.Tokenize()
 	if err := c.compileClass(); err != nil {
 		return err
@@ -106,7 +112,7 @@ func (c *compiler) compileFile() error {
 }
 
 func (c *compiler) compileClass() error {
-	fmt.Fprintf(c.w, "<class>\n")
+	fmt.Fprintf(c.syntaxWriter, "<class>\n")
 	if err := c.consumeKeyword(KeywordClass); err != nil {
 		return err
 	}
@@ -129,13 +135,13 @@ func (c *compiler) compileClass() error {
 		}
 	}
 	c.advance()
-	fmt.Fprintf(c.w, "</class>\n")
+	fmt.Fprintf(c.syntaxWriter, "</class>\n")
 	c.classTable.Reset()
 	return nil
 }
 
 func (c *compiler) compileClassVarDec() error {
-	fmt.Fprintf(c.w, "<classVarDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "<classVarDec>\n")
 	kind := SymbolKindField
 	category := "field"
 	if c.gotKeyword(KeywordStatic) {
@@ -165,7 +171,7 @@ func (c *compiler) compileClassVarDec() error {
 	if err := c.consumeSymbol(';'); err != nil {
 		return err
 	}
-	fmt.Fprintf(c.w, "</classVarDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "</classVarDec>\n")
 	return nil
 }
 
@@ -185,7 +191,7 @@ func (c *compiler) compileType() (string, error) {
 }
 
 func (c *compiler) compileSubroutine() error {
-	fmt.Fprintf(c.w, "<subroutineDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "<subroutineDec>\n")
 
 	// keyword constructor / function / method
 	if err := c.consumeKeyword(KeywordConstructor, KeywordFunction, KeywordMethod); err != nil {
@@ -218,7 +224,7 @@ func (c *compiler) compileSubroutine() error {
 		return err
 	}
 
-	fmt.Fprintf(c.w, "</subroutineDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "</subroutineDec>\n")
 	c.subroutineTable.Reset()
 	return nil
 }
@@ -227,7 +233,7 @@ func (c *compiler) compileParameterList() error {
 	if err := c.consumeSymbol('('); err != nil {
 		return err
 	}
-	fmt.Fprintf(c.w, "<parameterList>\n")
+	fmt.Fprintf(c.syntaxWriter, "<parameterList>\n")
 	if c.gotSymbol(')') {
 		// empty parameter list
 	} else {
@@ -254,13 +260,13 @@ func (c *compiler) compileParameterList() error {
 			}
 		}
 	}
-	fmt.Fprintf(c.w, "</parameterList>\n")
+	fmt.Fprintf(c.syntaxWriter, "</parameterList>\n")
 	c.advance()
 	return nil
 }
 
 func (c *compiler) compileSubroutineBody() error {
-	fmt.Fprintf(c.w, "<subroutineBody>\n")
+	fmt.Fprintf(c.syntaxWriter, "<subroutineBody>\n")
 
 	// opening {
 	if err := c.consumeSymbol('{'); err != nil {
@@ -275,21 +281,21 @@ func (c *compiler) compileSubroutineBody() error {
 	}
 
 	// statements and closing }
-	fmt.Fprintf(c.w, "<statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "<statements>\n")
 	for !c.gotSymbol('}') {
 		if err := c.compileStatement(); err != nil {
 			return err
 		}
 	}
-	fmt.Fprintf(c.w, "</statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "</statements>\n")
 	c.advance()
 
-	fmt.Fprintf(c.w, "</subroutineBody>\n")
+	fmt.Fprintf(c.syntaxWriter, "</subroutineBody>\n")
 	return nil
 }
 
 func (c *compiler) compileVarDec() error {
-	fmt.Fprintf(c.w, "<varDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "<varDec>\n")
 	if err := c.consumeKeyword(KeywordVar); err != nil {
 		return err
 	}
@@ -313,7 +319,7 @@ func (c *compiler) compileVarDec() error {
 	if err := c.consumeSymbol(';'); err != nil {
 		return err
 	}
-	fmt.Fprintf(c.w, "</varDec>\n")
+	fmt.Fprintf(c.syntaxWriter, "</varDec>\n")
 	return nil
 }
 
@@ -334,7 +340,7 @@ func (c *compiler) compileStatement() error {
 }
 
 func (c *compiler) compileLetStatement() error {
-	fmt.Fprintf(c.w, "<letStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "<letStatement>\n")
 
 	// keyword let
 	if err := c.consumeKeyword(KeywordLet); err != nil {
@@ -374,12 +380,12 @@ func (c *compiler) compileLetStatement() error {
 		return err
 	}
 
-	fmt.Fprintf(c.w, "</letStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "</letStatement>\n")
 	return nil
 }
 
 func (c *compiler) compileIfStatement() error {
-	fmt.Fprintf(c.w, "<ifStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "<ifStatement>\n")
 
 	// keyword if
 	if err := c.consumeKeyword(KeywordIf); err != nil {
@@ -407,13 +413,13 @@ func (c *compiler) compileIfStatement() error {
 	}
 
 	// statements and closing }
-	fmt.Fprintf(c.w, "<statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "<statements>\n")
 	for !c.gotSymbol('}') {
 		if err := c.compileStatement(); err != nil {
 			return err
 		}
 	}
-	fmt.Fprintf(c.w, "</statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "</statements>\n")
 	c.advance()
 
 	// optional else part
@@ -426,22 +432,22 @@ func (c *compiler) compileIfStatement() error {
 		}
 
 		// statements and closing }
-		fmt.Fprintf(c.w, "<statements>\n")
+		fmt.Fprintf(c.syntaxWriter, "<statements>\n")
 		for !c.gotSymbol('}') {
 			if err := c.compileStatement(); err != nil {
 				return err
 			}
 		}
-		fmt.Fprintf(c.w, "</statements>\n")
+		fmt.Fprintf(c.syntaxWriter, "</statements>\n")
 		c.advance()
 	}
 
-	fmt.Fprintf(c.w, "</ifStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "</ifStatement>\n")
 	return nil
 }
 
 func (c *compiler) compileWhileStatement() error {
-	fmt.Fprintf(c.w, "<whileStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "<whileStatement>\n")
 
 	// keyword while
 	if err := c.consumeKeyword(KeywordWhile); err != nil {
@@ -469,40 +475,37 @@ func (c *compiler) compileWhileStatement() error {
 	}
 
 	// statements and closing }
-	fmt.Fprintf(c.w, "<statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "<statements>\n")
 	for !c.gotSymbol('}') {
 		if err := c.compileStatement(); err != nil {
 			return err
 		}
 	}
-	fmt.Fprintf(c.w, "</statements>\n")
+	fmt.Fprintf(c.syntaxWriter, "</statements>\n")
 	c.advance()
 
-	fmt.Fprintf(c.w, "</whileStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "</whileStatement>\n")
 	return nil
 }
 
 func (c *compiler) compileDoStatement() error {
-	fmt.Fprintf(c.w, "<doStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "<doStatement>\n")
 	if err := c.consumeKeyword(KeywordDo); err != nil {
 		return err
 	}
-	identifier, err := c.consumeIdentifier()
-	if err != nil {
-		return err
-	}
-	if err := c.compileSubroutineCall(identifier); err != nil {
+	if err := c.compileExpression(); err != nil {
 		return err
 	}
 	if err := c.consumeSymbol(';'); err != nil {
 		return err
 	}
-	fmt.Fprintf(c.w, "</doStatement>\n")
+	c.vmWriter.WritePop(SegmentTemp, 0)
+	fmt.Fprintf(c.syntaxWriter, "</doStatement>\n")
 	return nil
 }
 
 func (c *compiler) compileReturnStatement() error {
-	fmt.Fprintf(c.w, "<returnStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "<returnStatement>\n")
 	if err := c.consumeKeyword(KeywordReturn); err != nil {
 		return err
 	}
@@ -516,33 +519,60 @@ func (c *compiler) compileReturnStatement() error {
 			return err
 		}
 	}
-	fmt.Fprintf(c.w, "</returnStatement>\n")
+	fmt.Fprintf(c.syntaxWriter, "</returnStatement>\n")
+	c.vmWriter.WriteReturn()
 	return nil
 }
 
 func (c *compiler) compileExpression() error {
-	fmt.Fprintf(c.w, "<expression>\n")
+	fmt.Fprintf(c.syntaxWriter, "<expression>\n")
 
+	var operator rune
 	for {
 		if err := c.compileTerm(); err != nil {
 			return err
 		}
+		switch operator {
+		case '+':
+			c.vmWriter.WriteArithmetic(CommandAdd)
+		case '-':
+			c.vmWriter.WriteArithmetic(CommandSub)
+		case '*':
+			c.vmWriter.WriteCall("Math.multiply", 2)
+		case '/':
+			c.vmWriter.WriteCall("Math.divide", 2)
+		case '&':
+			c.vmWriter.WriteArithmetic(CommandAnd)
+		case '|':
+			c.vmWriter.WriteArithmetic(CommandOr)
+		case '<':
+			c.vmWriter.WriteArithmetic(CommandLt)
+		case '>':
+			c.vmWriter.WriteArithmetic(CommandGt)
+		case '=':
+			c.vmWriter.WriteArithmetic(CommandEq)
+		}
 		if c.gotSymbol('+', '-', '*', '/', '&', '|', '<', '>', '=') {
+			operator = c.t.Symbol()
 			c.advance()
 		} else {
 			break
 		}
 	}
 
-	fmt.Fprintf(c.w, "</expression>\n")
+	fmt.Fprintf(c.syntaxWriter, "</expression>\n")
 	return nil
 }
 
 func (c *compiler) compileTerm() error {
-	fmt.Fprintf(c.w, "<term>\n")
+	fmt.Fprintf(c.syntaxWriter, "<term>\n")
 
-	if c.got(TokenTypeIntConst, TokenTypeStringConst) {
-		// int or string constant
+	if c.got(TokenTypeIntConst) {
+		// int constant
+		c.vmWriter.WritePush(SegmentConstant, c.t.intVal)
+		c.advance()
+	} else if c.got(TokenTypeStringConst) {
+		// string constant
 		c.advance()
 	} else if c.gotKeyword(KeywordTrue, KeywordFalse, KeywordNull, KeywordThis) {
 		// keyword true / false / null / this
@@ -577,22 +607,43 @@ func (c *compiler) compileTerm() error {
 				return err
 			}
 		} else if c.gotSymbol('(', '.') {
+			// subroutine call
 			if err := c.compileSubroutineCall(identifier); err != nil {
 				return err
 			}
 		} else {
 			// just a variable
+			segment, index := c.translateVariable(identifier)
+			c.vmWriter.WritePush(segment, index)
 			c.printIdentifierUse(identifier)
 		}
 	} else {
 		return c.errExpected("term")
 	}
 
-	fmt.Fprintf(c.w, "</term>\n")
+	fmt.Fprintf(c.syntaxWriter, "</term>\n")
 	return nil
 }
 
+func (c *compiler) translateVariable(name string) (Segment, int) {
+	table := c.lookup(name)
+	kind := table.KindOf(name)
+	index := table.IndexOf(name)
+	switch kind {
+	case SymbolKindStatic:
+		// TODO
+	case SymbolKindField:
+		// TODO
+	case SymbolKindArg:
+		// TODO
+	case SymbolKindVar:
+		return SegmentLocal, index
+	}
+	return 0, 0
+}
+
 func (c *compiler) compileSubroutineCall(identifier string) error {
+	name := identifier
 	if c.gotSymbol('.') {
 		c.printIdentifier(identifier, "class", -1, "use")
 		c.advance()
@@ -601,25 +652,30 @@ func (c *compiler) compileSubroutineCall(identifier string) error {
 			return err
 		}
 		c.printIdentifier(subroutineName, "subroutine", -1, "use")
+		name = name + "." + subroutineName
 	} else {
 		c.printIdentifier(identifier, "subroutine", -1, "use")
 	}
-	if err := c.compileExpressionList(); err != nil {
+	nArgs, err := c.compileExpressionList()
+	if err != nil {
 		return err
 	}
+	c.vmWriter.WriteCall(name, nArgs)
 	return nil
 }
 
-func (c *compiler) compileExpressionList() error {
+func (c *compiler) compileExpressionList() (int, error) {
+	count := 0
 	if err := c.consumeSymbol('('); err != nil {
-		return err
+		return 0, err
 	}
-	fmt.Fprintf(c.w, "<expressionList>\n")
+	fmt.Fprintf(c.syntaxWriter, "<expressionList>\n")
 	if !c.gotSymbol(')') {
 		for {
 			if err := c.compileExpression(); err != nil {
-				return err
+				return 0, err
 			}
+			count++
 			if c.gotSymbol(',') {
 				c.advance()
 			} else {
@@ -627,11 +683,11 @@ func (c *compiler) compileExpressionList() error {
 			}
 		}
 	}
-	fmt.Fprintf(c.w, "</expressionList>\n")
+	fmt.Fprintf(c.syntaxWriter, "</expressionList>\n")
 	if err := c.consumeSymbol(')'); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return count, nil
 }
 
 func (c *compiler) printIdentifierUse(name string) {
@@ -651,37 +707,37 @@ func (c *compiler) printIdentifierUse(name string) {
 		category = "var"
 	}
 
-	fmt.Fprintf(c.w, "<identifier>\n")
-	fmt.Fprintf(c.w, "<name> %s </name>\n", name)
-	fmt.Fprintf(c.w, "<category> %s </category>\n", category)
-	fmt.Fprintf(c.w, "<index> %d </index>\n", index)
-	fmt.Fprintf(c.w, "<usage> use </usage>\n")
-	fmt.Fprintf(c.w, "</identifier>\n")
+	fmt.Fprintf(c.syntaxWriter, "<identifier>\n")
+	fmt.Fprintf(c.syntaxWriter, "<name> %s </name>\n", name)
+	fmt.Fprintf(c.syntaxWriter, "<category> %s </category>\n", category)
+	fmt.Fprintf(c.syntaxWriter, "<index> %d </index>\n", index)
+	fmt.Fprintf(c.syntaxWriter, "<usage> use </usage>\n")
+	fmt.Fprintf(c.syntaxWriter, "</identifier>\n")
 }
 
 func (c *compiler) printIdentifier(name, category string, index int, usage string) {
-	fmt.Fprintf(c.w, "<identifier>\n")
-	fmt.Fprintf(c.w, "<name> %s </name>\n", name)
-	fmt.Fprintf(c.w, "<category> %s </category>\n", category)
+	fmt.Fprintf(c.syntaxWriter, "<identifier>\n")
+	fmt.Fprintf(c.syntaxWriter, "<name> %s </name>\n", name)
+	fmt.Fprintf(c.syntaxWriter, "<category> %s </category>\n", category)
 	if index >= 0 {
-		fmt.Fprintf(c.w, "<index> %d </index>\n", index)
+		fmt.Fprintf(c.syntaxWriter, "<index> %d </index>\n", index)
 	}
-	fmt.Fprintf(c.w, "<usage> %s </usage>\n", usage)
-	fmt.Fprintf(c.w, "</identifier>\n")
+	fmt.Fprintf(c.syntaxWriter, "<usage> %s </usage>\n", usage)
+	fmt.Fprintf(c.syntaxWriter, "</identifier>\n")
 }
 
 func (c *compiler) advance() {
 	switch c.t.TokenType() {
 	case TokenTypeKeyword:
-		fmt.Fprintf(c.w, "<keyword> %s </keyword>\n", c.t.Keyword().String())
+		fmt.Fprintf(c.syntaxWriter, "<keyword> %s </keyword>\n", c.t.Keyword().String())
 	case TokenTypeSymbol:
-		fmt.Fprintf(c.w, "<symbol> %s </symbol>\n", symbolToXML(c.t.Symbol()))
+		fmt.Fprintf(c.syntaxWriter, "<symbol> %s </symbol>\n", symbolToXML(c.t.Symbol()))
 	case TokenTypeIdentifier:
 		// identifiers are printed with printIdentifier and printIdentifierUse
 	case TokenTypeIntConst:
-		fmt.Fprintf(c.w, "<integerConstant> %d </integerConstant>\n", c.t.IntVal())
+		fmt.Fprintf(c.syntaxWriter, "<integerConstant> %d </integerConstant>\n", c.t.IntVal())
 	case TokenTypeStringConst:
-		fmt.Fprintf(c.w, "<stringConstant> %s </stringConstant>\n", c.t.StringVal())
+		fmt.Fprintf(c.syntaxWriter, "<stringConstant> %s </stringConstant>\n", c.t.StringVal())
 	}
 
 	c.atEnd = !c.t.Tokenize()
